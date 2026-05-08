@@ -1,0 +1,20 @@
+# Caddy reverse proxy — automatic HTTPS via Let's Encrypt.
+#
+# Use this Caddyfile when you have a hostname (real domain OR an
+# sslip.io / nip.io wildcard like 203-0-113-42.sslip.io). Caddy fetches
+# a Let's Encrypt cert for $DOMAIN and renews it automatically.
+#
+# For raw-IP HTTPS without DNS, swap this file for Caddyfile.selfsigned
+# (see README §HTTPS).
+#
+# Env vars (from .env.docker):
+#   DOMAIN       — e.g. eld.example.com  or  203-0-113-42.sslip.io
+#   CADDY_EMAIL  — contact for Let's Encrypt
+{
+	email {$CADDY_EMAIL}
+}
+
+{$DOMAIN} {
+	encode gzip zstd
+	reverse_proxy frontend:80
+}

@@ -1,0 +1,27 @@
+# Self-signed HTTPS for raw IP — Caddy issues an internal cert for the
+# fixed hostname "localhost" and uses it for ALL incoming requests via
+# default_sni. Works with any client (curl -k, browser-with-warning,
+# raw IP, etc).
+#
+# Browser will warn the cert isn't trusted; click "Advanced → Proceed".
+# The connection is still encrypted.
+#
+# Activate via .env.docker: CADDYFILE=./Caddyfile.selfsigned
+
+{
+	auto_https disable_redirects
+	default_sni localhost
+}
+
+# Issue an internal cert for "localhost" — Caddy will hand this cert
+# back to ANY client that connects (because of default_sni above), so
+# https://<droplet-ip>/ works without DNS.
+localhost {
+	tls internal
+	encode gzip zstd
+	reverse_proxy frontend:80
+}
+
+:80 {
+	redir https://{host}{uri} 308
+}

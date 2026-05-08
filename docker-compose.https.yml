@@ -1,0 +1,43 @@
+# Override file: switches the stack from "frontend bound to host port 80"
+# to "Caddy reverse-proxies frontend on 80/443 with automatic HTTPS".
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.https.yml \
+#                  --env-file .env.docker up -d --build
+#
+# Required in .env.docker:
+#   DOMAIN=eld.example.com
+#   CADDY_EMAIL=you@example.com
+# Recommended in .env.docker:
+#   DJANGO_ALLOWED_HOSTS=eld.example.com
+#   CORS_ALLOWED_ORIGINS=https://eld.example.com
+
+services:
+  frontend:
+    # Caddy now owns ingress — drop the host port binding from the base file.
+    ports: !reset []
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    environment:
+      # In selfsigned mode these are unused but compose still needs values.
+      DOMAIN: ${DOMAIN:-localhost}
+      CADDY_EMAIL: ${CADDY_EMAIL:-admin@example.com}
+    volumes:
+      # Switch the Caddyfile via CADDYFILE in .env.docker:
+      #   CADDYFILE=./Caddyfile               (Let's Encrypt — default)
+      #   CADDYFILE=./Caddyfile.selfsigned    (self-signed for raw IP)
+      - ${CADDYFILE:-./Caddyfile}:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
